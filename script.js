@@ -1,13 +1,19 @@
-const BOARD_SIZE = 9;
-const BOARD_HEIGHT = 250;
-const SEGMENT_HEIGHT = Math.floor(BOARD_HEIGHT / BOARD_SIZE);
-
 const BOARD_COLOR = "rgb(0, 0, 0)";
 const SNAKE_COLOR = "rgb(0, 255, 0)";
 const APPLE_COLOR = "rgb(255, 0, 0)";
 
+const FPS = 4;
+
+const BOARD_SIZE = 15;
+const BOARD_HEIGHT = 500;
+const SEGMENT_HEIGHT = Math.floor(BOARD_HEIGHT / BOARD_SIZE);
+
+// TODO: README, start game, game over, game won
+
 const gameState = {
   gameOver: false,
+  score: 0,
+  intervalId: null,
   snake: [
     { x: 0, y: 0 },
     { x: -1, y: 0 },
@@ -64,21 +70,23 @@ function drawSnake(ctx, snake) {
   }
 }
 
+function renderGame(ctx) {
+  clearBoard(ctx);
+  drawApple(ctx, gameState.apple);
+  drawSnake(ctx, gameState.snake);
+}
+
 function positionsCollides(pos1, pos2) {
   return pos1.x === pos2.x && pos1.y === pos2.y;
 }
 
 function snakeCollidesWithApple(snake, apple) {
-  return snake.some((segment) => {
-    return positionsCollides(apple, segment);
-  });
+  return snake.some((segment) => positionsCollides(apple, segment));
 }
 
 function snakeCollidesWithItself(snake) {
   const head = snake[0];
-  return snake.some((segment, idx) => {
-    return idx !== 0 && positionsCollides(head, segment);
-  });
+  return snake.slice(1).some((segment) => positionsCollides(head, segment));
 }
 
 function calculateDirection(direction, nextDirection) {
@@ -92,7 +100,7 @@ function calculateDirection(direction, nextDirection) {
   }
 }
 
-function generateNewApplePosition(snake) {
+function generateNewApple(snake) {
   while (true) {
     const newPosition = {
       x: Math.floor(Math.random() * BOARD_SIZE),
@@ -105,48 +113,41 @@ function generateNewApplePosition(snake) {
   }
 }
 
-function moveSnake(snake, apple) {
-  const head = snake[0];
+function updateGame() {
+  gameState.direction = calculateDirection(
+    gameState.direction,
+    gameState.nextDirection,
+  );
+
+  const head = gameState.snake[0];
   const newHead = {
     x: (head.x + gameState.direction.x + BOARD_SIZE) % BOARD_SIZE,
     y: (head.y + gameState.direction.y + BOARD_SIZE) % BOARD_SIZE,
   };
 
-  const newSnake = [newHead, ...snake];
+  const newSnake = [newHead, ...gameState.snake];
 
-  if (positionsCollides(newHead, apple)) {
-    appleCollisionFlag = true;
-  } else if (snakeCollidesWithItself(snake)) {
-    snakeCollistionFlag = true;
+  if (positionsCollides(newHead, gameState.apple)) {
+    gameState.score++;
+    gameState.apple = generateNewApple(newSnake);
   } else {
     newSnake.pop();
   }
 
-  return newSnake;
+  if (snakeCollidesWithItself(newSnake)) {
+    gameState.gameOver = true;
+  }
+
+  gameState.snake = newSnake;
 }
 
-function renderGame(ctx) {
-  clearBoard(ctx);
-  drawApple(ctx, gameState.apple);
-  drawSnake(ctx, gameState.snake);
-}
-
-function draw(ctx) {
+function loop(ctx) {
   if (gameState.gameOver) {
+    clearInterval(gameState.intervalId);
     return;
   }
 
-  // if (appleCollisionFlag) {
-  //   applePos = generateNewApplePosition(snake);
-  //   appleCollisionFlag = false;
-  // }
-
-  gameState.direction = calculateDirection(
-    gameState.direction,
-    gameState.nextDirection,
-  );
-  gameState.snake = moveSnake(gameState.snake, gameState.apple);
-
+  updateGame();
   renderGame(ctx);
 }
 
@@ -155,9 +156,9 @@ function runGame() {
   initCanvas(canvas);
 
   const ctx = getContext(canvas);
-  draw(ctx);
 
-  setInterval(draw, 500, ctx);
+  loop(ctx);
+  gameState.intervalId = setInterval(loop, 1000 / FPS, ctx);
 }
 
 addEventListener("keydown", (event) => {
