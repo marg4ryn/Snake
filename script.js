@@ -1,6 +1,8 @@
 const BOARD_COLOR = "rgb(0, 0, 0)";
-const SNAKE_COLOR = "rgb(0, 255, 0)";
 const APPLE_COLOR = "rgb(255, 0, 0)";
+const SNAKE_COLOR = "rgb(0, 255, 0)";
+const SNAKE_EYES_COLOR = "rgb(0, 0, 0)";
+const SNAKE_OUTLINE_COLOR = "rgb(255, 255, 255)";
 
 const FPS = 4;
 
@@ -34,9 +36,10 @@ function getContext(canvas) {
   return canvas.getContext("2d");
 }
 
-function initCanvas(canvas) {
+function initCanvas(canvas, ctx) {
   canvas.width = BOARD_HEIGHT;
   canvas.height = BOARD_HEIGHT;
+  ctx.imageSmoothingEnabled = false;
 }
 
 function clearBoard(ctx) {
@@ -57,8 +60,51 @@ function drawApple(ctx, apple) {
   ctx.fill();
 }
 
-function drawSnake(ctx, snake) {
+function drawSnakeEyes(ctx, head, direction) {
+  const radius = SEGMENT_HEIGHT / 10;
+  const startAngle = 0;
+  const endAngle = Math.PI * 2;
+  const offset = SEGMENT_HEIGHT / 5;
+  let x1 = head.x * SEGMENT_HEIGHT + SEGMENT_HEIGHT / 2;
+  let y1 = head.y * SEGMENT_HEIGHT + SEGMENT_HEIGHT / 2;
+  let x2 = x1;
+  let y2 = y1;
+
+  if (direction.x !== 0) {
+    y1 -= offset;
+    y2 += offset;
+    if (direction.x > 0) {
+      x1 += offset;
+      x2 += offset;
+    } else {
+      x1 -= offset;
+      x2 -= offset;
+    }
+  } else {
+    x1 -= offset;
+    x2 += offset;
+    if (direction.y > 0) {
+      y1 += offset;
+      y2 += offset;
+    } else {
+      y1 -= offset;
+      y2 -= offset;
+    }
+  }
+
+  ctx.fillStyle = SNAKE_EYES_COLOR;
+  ctx.beginPath();
+  ctx.arc(x1, y1, radius, startAngle, endAngle);
+  ctx.arc(x2, y2, radius, startAngle, endAngle);
+  ctx.fill();
+}
+
+function drawSnake(ctx, snake, direction) {
+  if (snake.length === 0) return;
+
   ctx.fillStyle = SNAKE_COLOR;
+  ctx.strokeStyle = SNAKE_OUTLINE_COLOR;
+  ctx.lineWidth = 2;
 
   for (const segment of snake) {
     const x = segment.x * SEGMENT_HEIGHT;
@@ -67,13 +113,16 @@ function drawSnake(ctx, snake) {
     const height = SEGMENT_HEIGHT;
 
     ctx.fillRect(x, y, width, height);
+    ctx.strokeRect(x + 1, y + 1, width - 2, height - 2);
   }
+
+  drawSnakeEyes(ctx, snake[0], direction);
 }
 
 function renderGame(ctx) {
   clearBoard(ctx);
   drawApple(ctx, gameState.apple);
-  drawSnake(ctx, gameState.snake);
+  drawSnake(ctx, gameState.snake, gameState.direction);
 }
 
 function positionsCollides(pos1, pos2) {
@@ -153,9 +202,9 @@ function loop(ctx) {
 
 function runGame() {
   const canvas = getCanvas();
-  initCanvas(canvas);
-
   const ctx = getContext(canvas);
+
+  initCanvas(canvas, ctx);
 
   loop(ctx);
   gameState.intervalId = setInterval(loop, 1000 / FPS, ctx);

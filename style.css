@@ -11,3 +11,7 @@ body {
   height: 100vh;
   background-color: #212121;
 }
+
+canvas {
+  image-rendering: pixelated;
+}
