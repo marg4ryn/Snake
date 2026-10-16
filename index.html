@@ -1,10 +1,21 @@
 <!doctype html>
 <html lang="en">
   <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
     <script src="./script.js" defer></script>
     <link href="./style.css" rel="stylesheet" />
+    <title>Snake</title>
   </head>
   <body>
-    <canvas id="canvas"></canvas>
+    <div id="game">
+      <div id="score">Score: 0</div>
+      <canvas id="canvas"></canvas>
+      <div id="screen" hidden>
+        <h1 id="screenTitle"></h1>
+        <p id="screenMessage"></p>
+        <button id="playBtn" type="button"></button>
+      </div>
+    </div>
   </body>
 </html>
